@@ -37,11 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: 'YOUR_VAPID_PUBLIC_KEY' // Replace with your VAPID public key
-        });
-        console.log('Push subscription successful', subscription);
+        // For now, we'll just log that we're using local notifications
+        console.log('Using local notifications. Push notifications are disabled.');
       } catch (error) {
         console.error('Failed to subscribe to push notifications:', error);
       }

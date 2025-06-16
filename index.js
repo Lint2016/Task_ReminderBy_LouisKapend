@@ -77,33 +77,192 @@ var typed = new Typed('.auto-type',{
 /*the below code is used to get the form element from the html file and send it to firestore database */
 // Schedule a local notification for mobile devices
 async function scheduleLocalNotification(taskData) {
-  if (!('Notification' in window)) return false;
-  
-  if (Notification.permission === 'granted') {
+  try {
+    console.log('Attempting to schedule notification for task:', taskData);
+    
+    // Check if notifications are supported
+    if (!('Notification' in window)) {
+      console.log('This browser does not support notifications');
+      return false;
+    }
+
+    // Request permission if not already granted
+    if (Notification.permission !== 'granted') {
+      console.log('Requesting notification permission...');
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.log('Notification permission denied');
+        return false;
+      }
+    }
+
+    // Calculate time until notification
     const now = new Date();
     const taskTime = new Date(`${taskData.date}T${taskData.time}`);
     const timeUntilTask = taskTime - now;
     
-    if (timeUntilTask > 0) {
-      // Schedule the notification
-      setTimeout(() => {
-        const notification = new Notification('🔔 Task Reminder', {
-          body: taskData.task,
-          icon: '/images/icon-192x192.png',
-          vibrate: [200, 100, 200, 100, 200, 100, 200]
-        });
-        
-        notification.onclick = () => {
-          window.focus();
-          notification.close();
-        };
-      }, timeUntilTask);
-      
-      return true;
+    console.log('Current time:', now);
+    console.log('Task time:', taskTime);
+    console.log('Time until task (ms):', timeUntilTask);
+    
+    if (timeUntilTask <= 0) {
+      console.log('Task time is in the past, not scheduling notification');
+      return false;
     }
+
+    // Schedule the notification
+    console.log(`Scheduling notification in ${Math.floor(timeUntilTask/1000)} seconds`);
+    
+    const timeoutId = setTimeout(() => {
+      try {
+        console.log('Time for notification!');
+        
+        // Use SweetAlert for consistent notifications across devices
+        try {
+          // First, check if SweetAlert is available
+          if (typeof Swal !== 'undefined') {
+            // Play a sound using the Web Audio API
+            if (window.AudioContext || window.webkitAudioContext) {
+              try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.start();
+                setTimeout(() => {
+                  oscillator.stop();
+                }, 500);
+              } catch (e) {
+                console.log('Could not play notification sound:', e);
+              }
+            }
+            
+            // Show SweetAlert notification
+            Swal.fire({
+              title: '🔔 Task Reminder',
+              text: taskData.task,
+              icon: 'info',
+              confirmButtonText: 'OK',
+              allowOutsideClick: false,
+              allowEscapeKey: false,
+              allowEnterKey: true,
+              timer: 10000, // Auto close after 10 seconds
+              timerProgressBar: true,
+              showClass: {
+                popup: 'animate__animated animate__fadeInDown'
+              },
+              hideClass: {
+                popup: 'animate__animated animate__fadeOutUp'
+              },
+              didOpen: () => {
+                // Focus the confirm button for better keyboard navigation
+                const confirmButton = document.querySelector('.swal2-confirm');
+                if (confirmButton) confirmButton.focus();
+              },
+              willClose: () => {
+                // Any cleanup if needed
+              }
+            });
+          } else {
+            // Fallback to standard alert if SweetAlert is not available
+            alert(`🔔 Task Reminder: ${taskData.task}`);
+          }
+        } catch (error) {
+          console.error('Error showing notification:', error);
+          // Final fallback to basic alert
+          alert(`🔔 Task Reminder: ${taskData.task}`);
+        }
+        
+        // Use the Web Audio API for a simple beep sound
+        if (window.AudioContext || window.webkitAudioContext) {
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            setTimeout(() => {
+              oscillator.stop();
+            }, 500);
+          } catch (e) {
+            console.log('Could not play notification sound:', e);
+          }
+        }
+        
+      } catch (error) {
+        console.error('Error showing notification:', error);
+      }
+    }, timeUntilTask);
+    
+    // Store timeout ID in case we need to cancel it later
+    notificationTimeouts[taskData.id] = timeoutId;
+    
+    return true;
+    
+  } catch (error) {
+    console.error('Error in scheduleLocalNotification:', error);
+    return false;
   }
-  return false;
 }
+
+// Object to store notification timeouts
+const notificationTimeouts = {};
+
+// Function to reschedule all future tasks
+async function rescheduleAllNotifications() {
+  try {
+    console.log('Rescheduling notifications for all future tasks...');
+    const email = document.getElementById('user-email')?.value.trim();
+    if (!email) return;
+    
+    const tasksQuery = query(
+      collection(db, 'tasks'),
+      where('email', '==', email),
+      where('completed', '==', false)
+    );
+    
+    const querySnapshot = await getDocs(tasksQuery);
+    const now = new Date();
+    
+    querySnapshot.forEach((doc) => {
+      const task = { id: doc.id, ...doc.data() };
+      const taskTime = new Date(`${task.date}T${task.time}`);
+      
+      // Only reschedule future tasks
+      if (taskTime > now) {
+        console.log(`Rescheduling notification for task: ${task.task}`);
+        scheduleLocalNotification({
+          task: task.task,
+          date: task.date,
+          time: task.time,
+          id: task.id
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error rescheduling notifications:', error);
+  }
+}
+
+// Call this when the page loads
+window.addEventListener('load', () => {
+  // Small delay to ensure Firebase is initialized
+  setTimeout(rescheduleAllNotifications, 1000);
+});
 
 // Handle form submission
 document.getElementById('task-form').addEventListener('submit', async (e) => {
@@ -159,7 +318,7 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
   showLoading();
   try {
     // Add the task to Firestore
-    await addDoc(collection(db, 'tasks'), {
+    const docRef = await addDoc(collection(db, 'tasks'), {
       task: task,
       email: email,
       date: date,
@@ -168,9 +327,21 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
       timestamp: serverTimestamp()
     });
 
+    // Schedule notification for the task
+    const notificationScheduled = await scheduleLocalNotification({
+      task: task,
+      date: date,
+      time: time,
+      id: docRef.id
+    });
+
+    if (!notificationScheduled) {
+      console.warn('Could not schedule notification. Make sure notifications are allowed for this site.');
+    }
+
     Swal.fire({
       title: "Great!",
-      text: "Task successfully saved!",
+      text: "Task successfully saved!" + (notificationScheduled ? ' Reminder set!' : ''),
       icon: "success",
       showConfirmButton: false,
       timer: 2000
