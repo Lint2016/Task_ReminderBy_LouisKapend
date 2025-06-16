@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4a90e2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Task Reminder">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="images/icon-192x192.png">
+    <title>Tasks-reminder-App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="shortcut icon" href="images/learn.jpg" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Task Reminder App</h1>
+        <h3><span class="auto-type"></span></h3>
+        
+        <!-- Loading Spinner -->
+        <div id="loading" class="loading-spinner" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+
+<form  id="task-form">
+
+    <div class="task-description">
+        <textarea name="textarea" id="textarea" cols="30" rows="10" placeholder="Describe your tasks here..." ></textarea>
+    </div>
+
+    <!--this div is where the saved task will be displayed after being pulled from firebase database-->
+   <div id="saved-tasks" class="task-list" >
+   </div>
+
+        
+   
+    <div class="email-phone">
+        <input type="email" name="email" id="user-email" placeholder="Please enter your email" class="email" >
+    </div>
+    
+    <div class="date-time">
+        <p>Select date and time to receive the reminder</p>
+        <input type="date" id="date" class="date" >
+        <input type="time" id="time" class="time" >
+    </div>
+    
+<div>
+    <button type="submit" id="submit">Add Task</button>
+    <button type="button" id="view-task">View task</button>
+    <button type="button" id="hide-task">hide task</button>
+    <button type="button" id="clearAll">Clear All</button>
+</div>
+    
+</form>
+
+</div>
+
+<footer>
+    <img src="images/LIntEdge2.png" alt="lintLogo1">
+    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+      // Register service worker if supported
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            const registration = await navigator.serviceWorker.register('sw.js');
+            console.log('ServiceWorker registration successful');
+          } catch (err) {
+            console.log('ServiceWorker registration failed: ', err);
+          }
+        });
+      }
+    </script>
+    <script type="module" src="index.js"></script>
+    <script type="module" src="mobile-init.js"></script>
+</body>
+</html>

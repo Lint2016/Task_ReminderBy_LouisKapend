@@ -1,0 +1,12 @@
+{
+  "name": "Task Reminder",
+  "short_name": "Reminders",
+  "description": "Never miss a task with our reminder app",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#4a90e2",
+  "theme_color": "#4a90e2",
+  "orientation": "portrait",
+  "icons": [],
+  "prefer_related_applications": false
+}
